@@ -1,0 +1,39 @@
+@model FinPort.Models.PortfolioPosition
+@{
+    ViewData["Title"] = "Create Position";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@section Buttons
+{
+    <input type="submit" value="Create" class="btn btn-primary" form="form" />
+    <a asp-action="Edit" asp-controller="Portfolios" asp-route-id="@Model.PortfolioId" class="btn btn-secondary">Cancel</a>
+}
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Create" id="form">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="PortfolioId" class="form-control" />
+            <input type="hidden" asp-for="Id" />
+            <div class="form-group">
+                <label asp-for="Name" class="control-label"></label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="ISIN" class="control-label"></label>
+                <input asp-for="ISIN" class="form-control" />
+                <span asp-validation-for="ISIN" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Quantity" class="control-label"></label>
+                <input asp-for="Quantity" class="form-control" />
+                <span asp-validation-for="Quantity" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="PurchasePrice" class="control-label"></label>
+                <input asp-for="PurchasePrice" class="form-control" />
+                <span asp-validation-for="PurchasePrice" class="text-danger"></span>
+            </div>
+        </form>
+    </div>
+</div>

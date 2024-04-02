@@ -1,0 +1,33 @@
+@model FinPort.Models.SettingViewModel
+@{
+    ViewData["Title"] = "Settings";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Buttons {
+    <input type="submit" form="form" value="Save" class="btn btn-primary" />
+}
+
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Index" id="form">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-check">
+                <input asp-for="PushPortfolioDetailsToHomeAssistant" class="form-check-input" />
+                <label asp-for="PushPortfolioDetailsToHomeAssistant" class="form-check-label"></label>
+                <span asp-validation-for="PushPortfolioDetailsToHomeAssistant" class="text-danger"></span>
+            </div>
+            <div class="form-check">
+                <input asp-for="PushPositionDetailsToHomeAssistant" class="form-check-input" />
+                <label asp-for="PushPositionDetailsToHomeAssistant" class="form-check-label"></label>
+                <span asp-validation-for="PushPositionDetailsToHomeAssistant" class="text-danger"></span>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
