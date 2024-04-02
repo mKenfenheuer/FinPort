@@ -38,6 +38,16 @@ public class Program
             db.Database.Migrate();
         }
 
+        //Enable relative path for HASSIO Ingress
+        app.Use(async (context, next) =>
+        {
+            if (context.Request.Headers.ContainsKey("X-Ingress-Path"))
+            {
+                context.Request.PathBase = context.Request.Headers["X-Ingress-Path"].ToString();
+            }
+            await next();
+        });
+
         // Configure the HTTP request pipeline.
         if (!app.Environment.IsDevelopment())
         {
