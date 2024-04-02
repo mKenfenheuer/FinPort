@@ -10,7 +10,6 @@ WORKDIR /src
 COPY . .
 RUN dotnet restore
 RUN dotnet build
-WORKDIR "/src/FinPort"
 RUN dotnet build "FinPort.csproj" -c Release -o /app/build
 
 FROM build AS publish
