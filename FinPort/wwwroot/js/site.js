@@ -1,6 +1,6 @@
 ﻿
 var connect = function () {
-    const socket = new WebSocket('/api/websocket');
+    const socket = new WebSocket('./api/websocket');
 
     // Connection opened
     socket.addEventListener('open', function (event) {

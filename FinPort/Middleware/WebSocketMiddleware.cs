@@ -16,7 +16,7 @@ public class WebSocketMiddleware : IMiddleware
     {
         if (context.WebSockets.IsWebSocketRequest)
         {
-            if(context.Request.Path != "/api/websocket")
+            if(!context.Request.Path.ToString().EndsWith("/api/websocket"))
             {
                 context.Response.StatusCode = 400;
                 return;
