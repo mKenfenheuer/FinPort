@@ -17,7 +17,7 @@ public class HomeAssistantApiClient
             BaseAddress = new Uri(configuration.GetValue<string>("HomeAssistant:Url") ?? "http://supervisor/core"),
             DefaultRequestHeaders =
             {
-                Authorization = new AuthenticationHeaderValue("Bearer", configuration.GetValue<string>("HomeAssistant:Token"))
+                Authorization = new AuthenticationHeaderValue("Bearer", configuration.GetValue<string>("HomeAssistant:Token") ?? Environment.GetEnvironmentVariable("SUPERVISOR_TOKEN"))
             }
         };
         _configuration = configuration;
