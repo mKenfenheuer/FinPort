@@ -8,9 +8,9 @@ EXPOSE 443
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /src
 COPY . .
+WORKDIR "/src/FinPort"
 RUN dotnet restore
 RUN dotnet build
-WORKDIR "/src/FinPort"
 RUN dotnet build "FinPort.csproj" -c Release -o /app/build
 
 FROM build AS publish
