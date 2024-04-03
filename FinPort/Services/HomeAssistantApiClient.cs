@@ -31,7 +31,7 @@ public class HomeAssistantApiClient
         var changeSensor = new HomeAssistantSensor()
         {
             EntityId = $"sensor.finport_portfolio_{portfolio.Id.Replace("-", "")}_change",
-            State = portfolio.Change?.ToString("0.00"),
+            State = portfolio.Change.ToJsonNumberFormat(),
             Attributes = new Dictionary<string, string>
             {
                 { "unit_of_measurement", "%" },
@@ -42,7 +42,7 @@ public class HomeAssistantApiClient
         var valueSensor = new HomeAssistantSensor()
         {
             EntityId = $"sensor.finport_portfolio_{portfolio.Id.Replace("-", "")}_value",
-            State = portfolio.Value?.ToString("0.00"),
+            State = portfolio.Value?.ToJsonNumberFormat(),
             Attributes = new Dictionary<string, string>
             {
                 { "unit_of_measurement", _configuration.GetValue<string>("CurrencySymbol") ?? "€" },
@@ -69,7 +69,7 @@ public class HomeAssistantApiClient
         var changeSensor = new HomeAssistantSensor()
         {
             EntityId = $"sensor.finport_position_{position.ISIN}_change",
-            State = position.Change.ToString("0.00"),
+            State = position.Change.ToJsonNumberFormat(),
             Attributes = new Dictionary<string, string>
             {
                 { "unit_of_measurement", "%" },
@@ -80,7 +80,7 @@ public class HomeAssistantApiClient
         var valueSensor = new HomeAssistantSensor()
         {
             EntityId = $"sensor.finport_position_{position.ISIN}_value",
-            State = position.LastPrice.ToString("0.00"),
+            State = position.LastPrice.ToJsonNumberFormat(),
             Attributes = new Dictionary<string, string>
             {
                 { "unit_of_measurement", _configuration.GetValue<string>("CurrencySymbol") ?? "€" },

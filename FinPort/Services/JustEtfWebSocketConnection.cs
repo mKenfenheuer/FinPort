@@ -11,7 +11,7 @@ public class JustEtfWebSocketConnection
     private readonly string _language;
     private readonly string _currency;
     private readonly CancellationTokenSource _cancellationTokenSource;
-    private readonly ClientWebSocket _webSocket = new ClientWebSocket();
+    private ClientWebSocket _webSocket;
     private Task ReceiveTask { get; set; }
     public event EventHandler<MarketUpdate>? OnMarketUpdate;
 
@@ -22,13 +22,18 @@ public class JustEtfWebSocketConnection
         _currency = currency;
         _cancellationTokenSource = new CancellationTokenSource();
         _logger = logger;
+        _webSocket = new ClientWebSocket();
         ReceiveTask = ReceiveAsync();
     }
 
     public async Task ReceiveAsync()
     {
+        _logger?.LogInformation($"WebSocket started for ISINs: {String.Join(",", _isin)}");
         try
         {
+            _webSocket = new ClientWebSocket();
+            _webSocket.Options.SetRequestHeader("Origin", "https://www.justetf.com");
+            _webSocket.Options.SetRequestHeader("User-Agent","Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0");
             await _webSocket.ConnectAsync(new Uri($"wss://api.mobile.stock-data-subscriptions.justetf.com/?subscription=trend&parameters=isins:{String.Join(",", _isin)}/currency:{_currency}/language:{_language}"), _cancellationTokenSource.Token);
 
             while (!_cancellationTokenSource.IsCancellationRequested)
@@ -64,6 +69,8 @@ public class JustEtfWebSocketConnection
         {
             _logger?.LogError("Error while connecting to websocket: {0}", ex.Message);
         }
+
+        _logger?.LogInformation($"WebSocket stopped for ISINs: {String.Join(",", _isin)}");
 
         await Task.Delay(1000);
         if (!_cancellationTokenSource.IsCancellationRequested)

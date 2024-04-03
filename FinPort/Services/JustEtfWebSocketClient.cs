@@ -18,12 +18,19 @@ namespace FinPort.Services
         private readonly IConfiguration _configuration;
         private readonly HomeAssistantApiClient _homeAssistantApiClient;
         private readonly WebSocketHandler _webSocketHandler;
+        private readonly ILoggerFactory _loggerFactory;
+        private readonly ILogger<JustEtfWebSocketClient> _logger;
 
-        public JustEtfWebSocketClient(IServiceScopeFactory serviceScopeFactory, IConfiguration configuration, HomeAssistantApiClient homeAssistantApiClient, WebSocketHandler webSocketHandler)
+        public JustEtfWebSocketClient(IServiceScopeFactory serviceScopeFactory, ILoggerFactory loggerFactory, IConfiguration configuration, HomeAssistantApiClient homeAssistantApiClient, WebSocketHandler webSocketHandler, ILogger<JustEtfWebSocketClient> logger)
         {
             _serviceScopeFactory = serviceScopeFactory;
             _webSockets = new Dictionary<string, JustEtfWebSocketConnection>();
             _configuration = configuration;
+            _loggerFactory = loggerFactory;
+            _configuration = configuration;
+            _homeAssistantApiClient = homeAssistantApiClient;
+            _webSocketHandler = webSocketHandler;
+            _logger = logger;
 
             using (var scope = _serviceScopeFactory.CreateScope())
             using (var db = scope.ServiceProvider.GetRequiredService<DataBaseContext>())
@@ -35,9 +42,6 @@ namespace FinPort.Services
                         AddISIN(position.ISIN, _configuration.GetValue<string>("Currency"), _configuration.GetValue<string>("Language"));
                     }
             }
-            _configuration = configuration;
-            _homeAssistantApiClient = homeAssistantApiClient;
-            _webSocketHandler = webSocketHandler;
         }
 
         public void AddISIN(string ISIN, string? currency = null, string? language = null)
@@ -49,9 +53,27 @@ namespace FinPort.Services
 
             if (!_webSockets.ContainsKey(ISIN))
             {
-                var webSocket = new JustEtfWebSocketConnection(new List<string> { ISIN }, language ?? "de", currency ?? "EUR");
+                var webSocket = new JustEtfWebSocketConnection(new List<string> { ISIN }, language ?? "de", currency ?? "EUR", _loggerFactory.CreateLogger<JustEtfWebSocketConnection>());
                 webSocket.OnMarketUpdate += (sender, update) => _ = OnMarketUpdate(sender, update);
                 _webSockets.Add(ISIN, webSocket);
+            }
+        }
+
+        public void AddISIN(IEnumerable<string> ISIN, string? currency = null, string? language = null)
+        {
+            if (currency == null)
+                currency = _configuration.GetValue<string>("Currency");
+            if (language == null)
+                language = _configuration.GetValue<string>("Language");
+
+            var isins = ISIN.Where(i => !_webSockets.ContainsKey(i)).ToList();
+
+            if (isins.Count() > 0)
+            {
+                var webSocket = new JustEtfWebSocketConnection(isins, language ?? "de", currency ?? "EUR", _loggerFactory.CreateLogger<JustEtfWebSocketConnection>());
+                webSocket.OnMarketUpdate += (sender, update) => _ = OnMarketUpdate(sender, update);
+                foreach (var isin in isins)
+                    _webSockets.Add(isin, webSocket);
             }
         }
 
@@ -77,7 +99,7 @@ namespace FinPort.Services
             if (value == 0)
                 return;
 
-            Console.WriteLine($"Received market update for ISIN {isin}: {value}");
+            _logger.LogDebug($"Received market update for ISIN {isin}: {value}");
 
             using (var scope = _serviceScopeFactory.CreateScope())
             using (var db = scope.ServiceProvider.GetRequiredService<DataBaseContext>())

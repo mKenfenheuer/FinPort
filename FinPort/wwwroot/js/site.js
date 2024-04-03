@@ -17,24 +17,12 @@ var connect = function () {
         var valueLocal = Math.round(data.Value * 100) / 100;
         var unit = data.Field == "value" ? "€" : "%";
         var current = parseFloat(target.attr("data-value"));
-        if (data.Value > current) {
-            target.addClass('text-success');
-            target.removeClass('text-danger');
-        }
-        else if (data.Value < current) {
-            target.remove('text-success');
-            target.addClass('text-danger');
-        }
-        else {
-            target.removeClass('text-success');
-            target.removeClass('text-danger');
-        }
         target.html(valueLocal.toLocaleString() + " " + unit);
         target.attr('data-value', data.Value);
         target.addClass('pulse');
         setTimeout(() => {
             target.removeClass('pulse');
-        }, 1000);
+        }, 550);
     });
 
     // Connection closed

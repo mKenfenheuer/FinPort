@@ -398,3 +398,5 @@ FodyWeavers.xsd
 *.sln.iml
 app_data.db
 appsettings.Development.json
+app_data.db-wal
+app_data.db-shm

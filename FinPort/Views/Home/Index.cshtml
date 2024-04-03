@@ -12,9 +12,9 @@
             <div class="card h-100 w-100 @(portfolio.Change > 0 ? "bg-success text-light" : "bg-danger text-light") shadow">
                 <div class="card-body text-end">
                     <h4 class="card-title text-start">@portfolio.Name</h4>
-                    <h5 class="card-subtitle mb-2 text-body-secondary text">@Html.DisplayFor(Model => portfolio.Value) €
+                    <h5 class="card-subtitle mb-2 text-body-secondary text" data-type="portfolio" data-field="value" data-id="@portfolio.Id" data-value="@portfolio.Value.ToJsonNumberFormat()">@Html.DisplayFor(Model => portfolio.Value) €
                     </h5>
-                    <p class="card-text">@Html.DisplayFor(Model => portfolio.Change) %</p>
+                    <p class="card-text" data-type="portfolio" data-field="change" data-id="@portfolio.Id" data-value="@portfolio.Change.ToJsonNumberFormat()">@Html.DisplayFor(Model => portfolio.Change) %</p>
                     <a asp-controller="Portfolios" asp-action="Edit" asp-id="@portfolio.Id"
                         class="card-link text-light">Details</a>
                 </div>
@@ -34,9 +34,9 @@
             <div class="card h-100 w-100 @(position.Change > 0 ? "bg-success text-light" : "bg-danger text-light") shadow">
                 <div class="card-body text-end">
                     <h4 class="card-title text-start">@position.Name</h4>
-                    <h5 class="card-subtitle mb-2 text-body-secondary text">@Html.DisplayFor(Model => position.Value) €
+                    <h5 class="card-subtitle mb-2 text-body-secondary text" data-type="position" data-field="value" data-id="@position.Id" data-value="@position.Value.ToJsonNumberFormat()">@Html.DisplayFor(Model => position.Value) €
                     </h5>
-                    <p class="card-text">@Html.DisplayFor(Model => position.Change) %</p>
+                    <p class="card-text" data-type="position" data-field="change" data-id="@position.Id" data-value="@position.Change.ToJsonNumberFormat()">@Html.DisplayFor(Model => position.Change) %</p>
                 </div>
             </div>
         </div>
