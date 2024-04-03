@@ -36,7 +36,7 @@ public class JustEtfWebSocketConnection
             _webSocket.Options.SetRequestHeader("User-Agent","Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0");
             await _webSocket.ConnectAsync(new Uri($"wss://api.mobile.stock-data-subscriptions.justetf.com/?subscription=trend&parameters=isins:{String.Join(",", _isin)}/currency:{_currency}/language:{_language}"), _cancellationTokenSource.Token);
 
-            while (!_cancellationTokenSource.IsCancellationRequested)
+            while (!_cancellationTokenSource.IsCancellationRequested && !_webSocket.CloseStatus.HasValue)
             {
                 try
                 {
@@ -53,13 +53,13 @@ public class JustEtfWebSocketConnection
                         }
                         catch (Exception ex)
                         {
-                            _logger?.LogError("Error while receiving message: {0}", ex.Message);
+                            _logger?.LogError("Error while receiving message: {0}", ex);
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger?.LogError("Error while receiving message: {0}", ex.Message);
+                    _logger?.LogError("Error while receiving message: {0}", ex);
                 }
             }
 
