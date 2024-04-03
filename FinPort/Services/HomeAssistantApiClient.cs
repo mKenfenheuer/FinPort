@@ -36,7 +36,8 @@ public class HomeAssistantApiClient
             {
                 { "unit_of_measurement", "%" },
                 { "friendly_name", $"{portfolio.Name} Change" },
-                { "icon", "mdi:percent" }
+                { "icon", "mdi:percent" },
+                {"state_class", "measurement"}
             }
         };
         var valueSensor = new HomeAssistantSensor()
@@ -47,7 +48,9 @@ public class HomeAssistantApiClient
             {
                 { "unit_of_measurement", _configuration.GetValue<string>("CurrencySymbol") ?? "€" },
                 { "friendly_name", $"{portfolio.Name} Value" },
-                { "icon", "mdi:cash" }
+                { "icon", "mdi:cash" },
+                {"state_class", "measurement"},
+                {"device_class", "monetary"}
             }
         };
         await PushHomeAssistantSensorAsync(changeSensor);
@@ -74,8 +77,9 @@ public class HomeAssistantApiClient
             {
                 { "unit_of_measurement", "%" },
                 { "friendly_name", $"{position.Name} Change" },
-                { "icon", "mdi:percent" }
-            }
+                { "icon", "mdi:percent" },
+                {"state_class", "measurement"}
+}
         };
         var valueSensor = new HomeAssistantSensor()
         {
@@ -85,7 +89,9 @@ public class HomeAssistantApiClient
             {
                 { "unit_of_measurement", _configuration.GetValue<string>("CurrencySymbol") ?? "€" },
                 { "friendly_name", $"{position.Name} Value" },
-                { "icon", "mdi:cash" }
+                { "icon", "mdi:cash" },
+                {"state_class", "measurement"},
+                {"device_class", "monetary"}
             }
         };
         await PushHomeAssistantSensorAsync(changeSensor);

@@ -20,6 +20,7 @@ namespace FinPort.Services
         private readonly WebSocketHandler _webSocketHandler;
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger<JustEtfWebSocketClient> _logger;
+        private readonly string _dbLock = "dblock";
 
         public JustEtfWebSocketClient(IServiceScopeFactory serviceScopeFactory, ILoggerFactory loggerFactory, IConfiguration configuration, HomeAssistantApiClient homeAssistantApiClient, WebSocketHandler webSocketHandler, ILogger<JustEtfWebSocketClient> logger)
         {
@@ -101,59 +102,66 @@ namespace FinPort.Services
 
             _logger.LogDebug($"Received market update for ISIN {isin}: {value}");
 
-            using (var scope = _serviceScopeFactory.CreateScope())
-            using (var db = scope.ServiceProvider.GetRequiredService<DataBaseContext>())
+            lock (_dbLock)
             {
-
-                var position = await db.PortfolioPositions.Include(p => p.Portfolio).ThenInclude(p => p.Positions).FirstOrDefaultAsync(p => p.ISIN == isin);
-                if (position != null && position.LastPrice != value)
+                using (var scope = _serviceScopeFactory.CreateScope())
+                using (var db = scope.ServiceProvider.GetRequiredService<DataBaseContext>())
                 {
-                    position.LastPrice = value;
-                    position.LastPriceDate = DateTime.Now;
-                    await db.SaveChangesAsync();
-
-                    await _webSocketHandler.SendMessage(new UpdateMessage()
+                    var position = db.PortfolioPositions.Include(p => p.Portfolio).ThenInclude(p => p.Positions).FirstOrDefault(p => p.ISIN == isin);
+                    if (position != null && position.LastPrice != value)
                     {
-                        Id = position.Id,
-                        Type = "position",
-                        Field = "value",
-                        Value = position.Value
-                    });
+                        position.LastPrice = value;
+                        position.LastPriceDate = DateTime.Now;
+                        db.SaveChanges();
 
-                    await _webSocketHandler.SendMessage(new UpdateMessage()
-                    {
-                        Id = position.Id,
-                        Type = "position",
-                        Field = "change",
-                        Value = position.Change
-                    });
+                        NotifyWebsocketsAsync(position).Wait();
 
-                    if (position.Portfolio?.Value != null)
-                        await _webSocketHandler.SendMessage(new UpdateMessage()
-                        {
-                            Id = position.Id,
-                            Type = "portfolio",
-                            Field = "value",
-                            Value = position.Portfolio.Value ?? 0
-                        });
-
-                    if (position.Portfolio?.Change != null)
-                        await _webSocketHandler.SendMessage(new UpdateMessage()
-                        {
-                            Id = position.Id,
-                            Type = "portfolio",
-                            Field = "change",
-                            Value = position.Portfolio.Change ?? 0
-                        });
-
-                    var pushPortfolio = await db.GetSettingAsync("PushPortfolioDetailsToHomeAssistant", false);
-                    if (position.Portfolio != null && pushPortfolio)
-                        _ = _homeAssistantApiClient.PushPortfolioDetailsAsync(position.Portfolio);
-                    var pushPosition = await db.GetSettingAsync("PushPositionDetailsToHomeAssistant", false);
-                    if (position != null && pushPosition)
-                        _ = _homeAssistantApiClient.PushPositionDetailsAsync(position);
+                        var pushPortfolio = db.GetSetting("PushPortfolioDetailsToHomeAssistant", false);
+                        if (position.Portfolio != null && pushPortfolio)
+                            _ = _homeAssistantApiClient.PushPortfolioDetailsAsync(position.Portfolio);
+                        var pushPosition = db.GetSetting("PushPositionDetailsToHomeAssistant", false);
+                        if (position != null && pushPosition)
+                            _ = _homeAssistantApiClient.PushPositionDetailsAsync(position);
+                    }
                 }
             }
+        }
+
+        private async Task NotifyWebsocketsAsync(PortfolioPosition position)
+        {
+            await _webSocketHandler.SendMessage(new UpdateMessage()
+            {
+                Id = position.Id,
+                Type = "position",
+                Field = "value",
+                Value = position.Value
+            });
+
+            await _webSocketHandler.SendMessage(new UpdateMessage()
+            {
+                Id = position.Id,
+                Type = "position",
+                Field = "change",
+                Value = position.Change
+            });
+
+            if (position.Portfolio?.Value != null)
+                await _webSocketHandler.SendMessage(new UpdateMessage()
+                {
+                    Id = position.Id,
+                    Type = "portfolio",
+                    Field = "value",
+                    Value = position.Portfolio.Value ?? 0
+                });
+
+            if (position.Portfolio?.Change != null)
+                await _webSocketHandler.SendMessage(new UpdateMessage()
+                {
+                    Id = position.Id,
+                    Type = "portfolio",
+                    Field = "change",
+                    Value = position.Portfolio.Change ?? 0
+                });
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
