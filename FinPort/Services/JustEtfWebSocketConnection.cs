@@ -33,10 +33,10 @@ public class JustEtfWebSocketConnection
         {
             _webSocket = new ClientWebSocket();
             _webSocket.Options.SetRequestHeader("Origin", "https://www.justetf.com");
-            _webSocket.Options.SetRequestHeader("User-Agent","Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0");
+            _webSocket.Options.SetRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0");
             await _webSocket.ConnectAsync(new Uri($"wss://api.mobile.stock-data-subscriptions.justetf.com/?subscription=trend&parameters=isins:{String.Join(",", _isin)}/currency:{_currency}/language:{_language}"), _cancellationTokenSource.Token);
 
-            while (!_cancellationTokenSource.IsCancellationRequested && !_webSocket.CloseStatus.HasValue)
+            while (!_cancellationTokenSource.IsCancellationRequested && (_webSocket.State == WebSocketState.Open || _webSocket.State == WebSocketState.Connecting))
             {
                 try
                 {
@@ -63,8 +63,8 @@ public class JustEtfWebSocketConnection
                     break;
                 }
             }
-
-            await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "WebSocket client stopped", CancellationToken.None);
+            if (_webSocket.State == WebSocketState.Open)
+                await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "WebSocket client stopped", CancellationToken.None);
         }
         catch (Exception ex)
         {
