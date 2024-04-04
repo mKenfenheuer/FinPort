@@ -60,6 +60,7 @@ public class JustEtfWebSocketConnection
                 catch (Exception ex)
                 {
                     _logger?.LogError("Error while receiving message: {0}", ex);
+                    break;
                 }
             }
 
