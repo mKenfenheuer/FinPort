@@ -83,10 +83,16 @@ public class AiMonitoringService : IHostedService, IDisposable
                 .OrderByDescending(a => a.ScrapedAt)
                 .Take(50)
                 .ToListAsync();
+            var existingAlerts = await db.AiAlerts
+                .Include(a => a.Position)
+                .Where(a => a.CreatedAt > DateTime.UtcNow.AddDays(-7))
+                .OrderByDescending(a => a.CreatedAt)
+                .Take(30)
+                .ToListAsync();
 
             if (!portfolios.Any()) return;
 
-            var prompt = BuildAnalysisPrompt(portfolios, recentArticles, customPrompt);
+            var prompt = BuildAnalysisPrompt(portfolios, recentArticles, existingAlerts, customPrompt);
             var response = await CallAiApiAsync(baseUrl, apiKey, model, prompt);
 
             if (response == null) return;
@@ -107,12 +113,12 @@ public class AiMonitoringService : IHostedService, IDisposable
         }
     }
 
-    private string BuildAnalysisPrompt(List<Portfolio> portfolios, List<ScrapedArticle> articles, string customPrompt)
+    private string BuildAnalysisPrompt(List<Portfolio> portfolios, List<ScrapedArticle> articles, List<AiAlert> existingAlerts, string customPrompt)
     {
         var sb = new StringBuilder();
 
         var systemInstruction = string.IsNullOrWhiteSpace(customPrompt)
-            ? "You are a financial portfolio risk analyst. Analyze the following portfolio data and recent news to identify positions at risk of losing value. For each risk identified, provide a JSON array of alerts."
+            ? "You are a financial portfolio risk analyst. Analyze the following portfolio data and recent news to identify positions at risk of losing value."
             : customPrompt;
 
         sb.AppendLine(systemInstruction);
@@ -145,8 +151,21 @@ public class AiMonitoringService : IHostedService, IDisposable
             }
         }
 
+        if (existingAlerts.Any())
+        {
+            sb.AppendLine();
+            sb.AppendLine("## Already Raised Alerts (last 7 days)");
+            sb.AppendLine("These alerts have ALREADY been sent to the user. Do NOT repeat them unless the situation has significantly changed or escalated.");
+            foreach (var alert in existingAlerts)
+            {
+                sb.AppendLine($"- [{alert.Severity}] {alert.Title} (Position: {alert.Position?.Name ?? "N/A"}, Date: {alert.CreatedAt:g})");
+                if (!string.IsNullOrWhiteSpace(alert.Analysis))
+                    sb.AppendLine($"  Analysis: {alert.Analysis.Substring(0, Math.Min(alert.Analysis.Length, 200))}");
+            }
+        }
+
         sb.AppendLine();
-        sb.AppendLine("Analyze the data and identify positions at risk. For each risk, provide the position name, severity, a short title, and detailed analysis. If no risks found, return an empty alerts array.");
+        sb.AppendLine("IMPORTANT: Only return NEW alerts for risks not already covered by the existing alerts above. If an existing alert already covers a risk and the situation has not materially changed or escalated, do NOT raise it again. If no new risks are found, return an empty alerts array.");
 
         return sb.ToString();
     }
