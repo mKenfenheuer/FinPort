@@ -1,0 +1,42 @@
+@model IEnumerable<FinPort.Models.ScrapedArticle>
+@{
+    ViewData["Title"] = "News";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">No articles yet. Articles will appear here once the web scraper runs.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Position</th>
+                    <th>Source</th>
+                    <th>Scraped</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var article in Model)
+                {
+                    <tr>
+                        <td>
+                            <a href="@article.Url" target="_blank" rel="noopener">@article.Title</a>
+                            @if (!string.IsNullOrEmpty(article.Summary))
+                            {
+                                <br /><small class="text-muted">@(article.Summary.Length > 200 ? article.Summary.Substring(0, 200) + "..." : article.Summary)</small>
+                            }
+                        </td>
+                        <td>@(article.Position?.Name ?? "—")</td>
+                        <td><small>@article.Source</small></td>
+                        <td><small>@article.ScrapedAt.ToString("g")</small></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

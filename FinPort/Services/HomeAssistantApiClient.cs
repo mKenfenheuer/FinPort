@@ -64,6 +64,17 @@ public class HomeAssistantApiClient
         await _httpClient.PostAsync($"api/states/{sensor.EntityId}", content);
     }
 
+    public async Task SendNotificationAsync(string title, string message)
+    {
+        var payload = JsonSerializer.Serialize(new
+        {
+            title = title,
+            message = message
+        });
+        var content = new StringContent(payload, Encoding.UTF8, "application/json");
+        await _httpClient.PostAsync("api/services/notify/persistent_notification", content);
+    }
+
     public async Task PushPositionDetailsAsync(PortfolioPosition position)
     {
         if (position.Id == null)

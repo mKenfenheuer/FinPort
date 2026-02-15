@@ -12,6 +12,8 @@ public class DataBaseContext : DbContext
     public DbSet<Portfolio> Portfolios { get; set; }
     public DbSet<PortfolioPosition> PortfolioPositions { get; set; }
     public DbSet<Setting> Settings { get; set; }
+    public DbSet<ScrapedArticle> ScrapedArticles { get; set; }
+    public DbSet<AiAlert> AiAlerts { get; set; }
 
     public T? GetSetting<T>(string key, T defaultValue)
     {

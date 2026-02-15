@@ -1,0 +1,67 @@
+@model IEnumerable<FinPort.Models.AiAlert>
+@{
+    ViewData["Title"] = "Alerts";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">No alerts yet. Alerts will appear here when the AI monitoring service detects risks.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Severity</th>
+                    <th>Title</th>
+                    <th>Position</th>
+                    <th>Portfolio</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var alert in Model)
+                {
+                    var rowClass = alert.IsRead ? "" : "fw-bold";
+                    var badgeClass = alert.Severity switch
+                    {
+                        FinPort.Models.AlertSeverity.Critical => "bg-danger",
+                        FinPort.Models.AlertSeverity.Warning => "bg-warning text-dark",
+                        _ => "bg-info text-dark"
+                    };
+                    <tr class="@rowClass">
+                        <td><span class="badge @badgeClass">@alert.Severity</span></td>
+                        <td>
+                            @alert.Title
+                            @if (!string.IsNullOrEmpty(alert.Analysis))
+                            {
+                                <br /><small class="text-muted">@alert.Analysis</small>
+                            }
+                        </td>
+                        <td>@(alert.Position?.Name ?? "—")</td>
+                        <td>@(alert.Portfolio?.Name ?? "—")</td>
+                        <td>@alert.CreatedAt.ToString("g")</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                @if (!alert.IsRead)
+                                {
+                                    <form asp-action="MarkRead" asp-route-id="@alert.Id" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-outline-primary btn-sm">Mark Read</button>
+                                    </form>
+                                }
+                                <form asp-action="Dismiss" asp-route-id="@alert.Id" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">Dismiss</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

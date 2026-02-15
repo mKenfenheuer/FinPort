@@ -8,23 +8,139 @@
     <input type="submit" form="form" value="Save" class="btn btn-primary" />
 }
 
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Index" id="form">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-check">
+<form asp-action="Index" id="form">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <!-- Home Assistant -->
+    <div class="card mb-3">
+        <div class="card-header"><strong>Home Assistant</strong></div>
+        <div class="card-body">
+            <div class="form-check mb-2">
                 <input asp-for="PushPortfolioDetailsToHomeAssistant" class="form-check-input" />
                 <label asp-for="PushPortfolioDetailsToHomeAssistant" class="form-check-label"></label>
-                <span asp-validation-for="PushPortfolioDetailsToHomeAssistant" class="text-danger"></span>
             </div>
             <div class="form-check">
                 <input asp-for="PushPositionDetailsToHomeAssistant" class="form-check-input" />
                 <label asp-for="PushPositionDetailsToHomeAssistant" class="form-check-label"></label>
-                <span asp-validation-for="PushPositionDetailsToHomeAssistant" class="text-danger"></span>
             </div>
-        </form>
+        </div>
     </div>
-</div>
+
+    <!-- Web Scraper -->
+    <div class="card mb-3">
+        <div class="card-header"><strong>Web Scraper</strong></div>
+        <div class="card-body">
+            <div class="form-check mb-3">
+                <input asp-for="ScraperEnabled" class="form-check-input" />
+                <label asp-for="ScraperEnabled" class="form-check-label"></label>
+            </div>
+            <div class="mb-3">
+                <label asp-for="ScraperIntervalMinutes" class="form-label"></label>
+                <input asp-for="ScraperIntervalMinutes" class="form-control" type="number" min="1" />
+                <span asp-validation-for="ScraperIntervalMinutes" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="ScraperRssFeeds" class="form-label"></label>
+                <textarea asp-for="ScraperRssFeeds" class="form-control" rows="4" placeholder="https://feeds.example.com/rss&#10;https://news.example.com/feed"></textarea>
+                <div class="form-text">One URL per line. Google News is always included automatically for each position.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Monitoring -->
+    <div class="card mb-3">
+        <div class="card-header"><strong>AI Monitoring</strong></div>
+        <div class="card-body">
+            <div class="form-check mb-3">
+                <input asp-for="AiEnabled" class="form-check-input" />
+                <label asp-for="AiEnabled" class="form-check-label"></label>
+            </div>
+            <div class="mb-3">
+                <label asp-for="AiBaseUrl" class="form-label"></label>
+                <input asp-for="AiBaseUrl" class="form-control" placeholder="https://api.openai.com" />
+                <div class="form-text">OpenAI-compatible API base URL (without /v1/chat/completions).</div>
+            </div>
+            <div class="mb-3">
+                <label asp-for="AiApiKey" class="form-label"></label>
+                <input asp-for="AiApiKey" class="form-control" type="password" />
+            </div>
+            <div class="mb-3">
+                <label asp-for="AiModel" class="form-label"></label>
+                <input asp-for="AiModel" class="form-control" placeholder="gpt-4o" />
+            </div>
+            <div class="mb-3">
+                <label asp-for="AiAnalysisPrompt" class="form-label"></label>
+                <textarea asp-for="AiAnalysisPrompt" class="form-control" rows="4" placeholder="You are a financial portfolio risk analyst. Analyze the portfolio data and recent news to identify positions at risk of losing value."></textarea>
+                <div class="form-text">Leave empty for the default prompt. The system will append portfolio data and news automatically.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="card mb-3">
+        <div class="card-header"><strong>Notifications</strong></div>
+        <div class="card-body">
+            <!-- Email -->
+            <h6>Email (SMTP)</h6>
+            <div class="form-check mb-3">
+                <input asp-for="NotificationEmailEnabled" class="form-check-input" />
+                <label asp-for="NotificationEmailEnabled" class="form-check-label"></label>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <label asp-for="NotificationEmailSmtpHost" class="form-label"></label>
+                    <input asp-for="NotificationEmailSmtpHost" class="form-control" placeholder="smtp.example.com" />
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="NotificationEmailSmtpPort" class="form-label"></label>
+                    <input asp-for="NotificationEmailSmtpPort" class="form-control" type="number" />
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label asp-for="NotificationEmailSmtpUser" class="form-label"></label>
+                    <input asp-for="NotificationEmailSmtpUser" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="NotificationEmailSmtpPassword" class="form-label"></label>
+                    <input asp-for="NotificationEmailSmtpPassword" class="form-control" type="password" />
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label asp-for="NotificationEmailFromAddress" class="form-label"></label>
+                    <input asp-for="NotificationEmailFromAddress" class="form-control" type="email" placeholder="finport@example.com" />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="NotificationEmailToAddress" class="form-label"></label>
+                    <input asp-for="NotificationEmailToAddress" class="form-control" type="email" placeholder="you@example.com" />
+                </div>
+            </div>
+
+            <hr />
+
+            <!-- Webhook -->
+            <h6>Webhook</h6>
+            <div class="form-check mb-3">
+                <input asp-for="NotificationWebhookEnabled" class="form-check-input" />
+                <label asp-for="NotificationWebhookEnabled" class="form-check-label"></label>
+            </div>
+            <div class="mb-3">
+                <label asp-for="NotificationWebhookUrl" class="form-label"></label>
+                <input asp-for="NotificationWebhookUrl" class="form-control" type="url" placeholder="https://hooks.example.com/notify" />
+            </div>
+
+            <hr />
+
+            <!-- Home Assistant Notifications -->
+            <h6>Home Assistant</h6>
+            <div class="form-check">
+                <input asp-for="NotificationHomeAssistantEnabled" class="form-check-input" />
+                <label asp-for="NotificationHomeAssistantEnabled" class="form-check-label"></label>
+            </div>
+        </div>
+    </div>
+</form>
 
 @section Scripts {
     @{

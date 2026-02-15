@@ -29,6 +29,12 @@ public class Program
         builder.Services.AddSingleton<WebSocketMiddleware>();
         builder.Services.AddSingleton<JustEtfWebSocketClient>();
         builder.Services.AddHostedService<JustEtfWebSocketClient>();
+        builder.Services.AddHttpClient();
+        builder.Services.AddSingleton<NotificationService>();
+        builder.Services.AddSingleton<WebScraperService>();
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<WebScraperService>());
+        builder.Services.AddSingleton<AiMonitoringService>();
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<AiMonitoringService>());
 
         var app = builder.Build();
 
