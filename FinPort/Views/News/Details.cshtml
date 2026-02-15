@@ -1,0 +1,47 @@
+@model FinPort.Models.ScrapedArticle
+@{
+    ViewData["Title"] = Model.Title;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Buttons {
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">Back to News</a>
+}
+
+<div class="card mb-3">
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-2">Source</dt>
+            <dd class="col-sm-10">@Model.Source</dd>
+            <dt class="col-sm-2">Position</dt>
+            <dd class="col-sm-10">@(Model.Position?.Name ?? "—")</dd>
+            <dt class="col-sm-2">Scraped</dt>
+            <dd class="col-sm-10">@Model.ScrapedAt.ToString("g")</dd>
+            <dt class="col-sm-2">Original URL</dt>
+            <dd class="col-sm-10"><a href="@Model.Url" target="_blank" rel="noopener">@Model.Url</a></dd>
+        </dl>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.Content))
+{
+    <div class="card">
+        <div class="card-header"><strong>Article Content</strong></div>
+        <div class="card-body">
+            <p style="white-space: pre-wrap;">@Model.Content</p>
+        </div>
+    </div>
+}
+else if (!string.IsNullOrWhiteSpace(Model.Summary))
+{
+    <div class="card">
+        <div class="card-header"><strong>Summary</strong></div>
+        <div class="card-body">
+            <p>@Model.Summary</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="alert alert-warning">No content available for this article.</div>
+}

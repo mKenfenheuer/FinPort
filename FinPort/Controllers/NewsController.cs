@@ -22,5 +22,15 @@ namespace FinPort.Controllers
                 .ToListAsync();
             return View(articles);
         }
+
+        public async Task<IActionResult> Details(string id)
+        {
+            var article = await _context.ScrapedArticles
+                .Include(a => a.Position)
+                .FirstOrDefaultAsync(a => a.Id == id);
+            if (article == null)
+                return NotFound();
+            return View(article);
+        }
     }
 }

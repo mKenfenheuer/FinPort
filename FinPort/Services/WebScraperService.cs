@@ -1,5 +1,6 @@
 using FinPort.Data;
 using FinPort.Models;
+using HtmlAgilityPack;
 using Microsoft.EntityFrameworkCore;
 using System.ServiceModel.Syndication;
 using System.Xml;
@@ -94,39 +95,47 @@ public class WebScraperService : IHostedService, IDisposable
             var searchTerm = Uri.EscapeDataString($"{position.Name} {position.ISIN}");
             var url = $"https://news.google.com/rss/search?q={searchTerm}&hl=en";
 
-            var client = _httpClientFactory.CreateClient();
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (compatible; FinPort/1.0)");
-
-            using var stream = await client.GetStreamAsync(url);
-            using var reader = XmlReader.Create(stream);
-            var feed = SyndicationFeed.Load(reader);
-
+            var feed = await FetchRssFeedAsync(url);
             if (feed == null) return;
+
+            var contentClient = _httpClientFactory.CreateClient();
+            contentClient.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (compatible; FinPort/1.0)");
+            contentClient.Timeout = TimeSpan.FromSeconds(15);
 
             foreach (var item in feed.Items.Take(10))
             {
-                var articleUrl = item.Links.FirstOrDefault()?.Uri?.ToString() ?? "";
-                if (string.IsNullOrEmpty(articleUrl)) continue;
-
-                var exists = await db.ScrapedArticles.AnyAsync(a => a.Url == articleUrl);
-                if (exists) continue;
-
-                db.ScrapedArticles.Add(new ScrapedArticle
+                try
                 {
-                    PositionId = position.Id,
-                    Title = item.Title?.Text ?? "",
-                    Url = articleUrl,
-                    Summary = item.Summary?.Text ?? "",
-                    Source = "Google News",
-                    ScrapedAt = DateTime.UtcNow
-                });
+                    var articleUrl = item.Links.FirstOrDefault()?.Uri?.ToString() ?? "";
+                    if (string.IsNullOrEmpty(articleUrl)) continue;
+
+                    var exists = await db.ScrapedArticles.AnyAsync(a => a.Url == articleUrl);
+                    if (exists) continue;
+
+                    var content = await FetchArticleContentAsync(contentClient, articleUrl);
+
+                    db.ScrapedArticles.Add(new ScrapedArticle
+                    {
+                        PositionId = position.Id,
+                        Title = item.Title?.Text ?? "",
+                        Url = articleUrl,
+                        Summary = item.Summary?.Text ?? "",
+                        Content = content,
+                        Source = "Google News",
+                        ScrapedAt = DateTime.UtcNow
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "Failed to process article from Google News for {PositionName}", position.Name);
+                }
             }
 
             await db.SaveChangesAsync();
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to scrape Google News for position {PositionName}", position.Name);
+            _logger.LogWarning("Failed to scrape Google News for position {PositionName}: {Message}", position.Name, ex.Message);
         }
     }
 
@@ -134,38 +143,103 @@ public class WebScraperService : IHostedService, IDisposable
     {
         try
         {
-            var client = _httpClientFactory.CreateClient();
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (compatible; FinPort/1.0)");
-
-            using var stream = await client.GetStreamAsync(feedUrl);
-            using var reader = XmlReader.Create(stream);
-            var feed = SyndicationFeed.Load(reader);
-
+            var feed = await FetchRssFeedAsync(feedUrl);
             if (feed == null) return;
+
+            var contentClient = _httpClientFactory.CreateClient();
+            contentClient.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (compatible; FinPort/1.0)");
+            contentClient.Timeout = TimeSpan.FromSeconds(15);
 
             foreach (var item in feed.Items.Take(20))
             {
-                var articleUrl = item.Links.FirstOrDefault()?.Uri?.ToString() ?? "";
-                if (string.IsNullOrEmpty(articleUrl)) continue;
-
-                var exists = await db.ScrapedArticles.AnyAsync(a => a.Url == articleUrl);
-                if (exists) continue;
-
-                db.ScrapedArticles.Add(new ScrapedArticle
+                try
                 {
-                    Title = item.Title?.Text ?? "",
-                    Url = articleUrl,
-                    Summary = item.Summary?.Text ?? "",
-                    Source = feedUrl,
-                    ScrapedAt = DateTime.UtcNow
-                });
+                    var articleUrl = item.Links.FirstOrDefault()?.Uri?.ToString() ?? "";
+                    if (string.IsNullOrEmpty(articleUrl)) continue;
+
+                    var exists = await db.ScrapedArticles.AnyAsync(a => a.Url == articleUrl);
+                    if (exists) continue;
+
+                    var content = await FetchArticleContentAsync(contentClient, articleUrl);
+
+                    db.ScrapedArticles.Add(new ScrapedArticle
+                    {
+                        Title = item.Title?.Text ?? "",
+                        Url = articleUrl,
+                        Summary = item.Summary?.Text ?? "",
+                        Content = content,
+                        Source = feedUrl,
+                        ScrapedAt = DateTime.UtcNow
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "Failed to process article from feed {FeedUrl}", feedUrl);
+                }
             }
 
             await db.SaveChangesAsync();
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to scrape RSS feed {FeedUrl}", feedUrl);
+            _logger.LogWarning("Failed to scrape RSS feed {FeedUrl}: {Message}", feedUrl, ex.Message);
+        }
+    }
+
+    private async Task<SyndicationFeed?> FetchRssFeedAsync(string url)
+    {
+        var client = _httpClientFactory.CreateClient();
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (compatible; FinPort/1.0)");
+        client.Timeout = TimeSpan.FromSeconds(30);
+
+        using var response = await client.GetAsync(url);
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogWarning("RSS feed returned {StatusCode} for {Url}", response.StatusCode, url);
+            return null;
+        }
+
+        using var stream = await response.Content.ReadAsStreamAsync();
+        using var reader = XmlReader.Create(stream);
+        return SyndicationFeed.Load(reader);
+    }
+
+    private async Task<string?> FetchArticleContentAsync(HttpClient client, string url)
+    {
+        try
+        {
+            var html = await client.GetStringAsync(url);
+            var doc = new HtmlDocument();
+            doc.LoadHtml(html);
+
+            // Remove script, style, nav, header, footer elements
+            foreach (var node in doc.DocumentNode.SelectNodes("//script|//style|//nav|//header|//footer|//aside|//noscript") ?? Enumerable.Empty<HtmlNode>())
+                node.Remove();
+
+            // Try common article content selectors
+            var articleNode = doc.DocumentNode.SelectSingleNode("//article")
+                ?? doc.DocumentNode.SelectSingleNode("//*[contains(@class,'article-body')]")
+                ?? doc.DocumentNode.SelectSingleNode("//*[contains(@class,'article-content')]")
+                ?? doc.DocumentNode.SelectSingleNode("//*[contains(@class,'story-body')]")
+                ?? doc.DocumentNode.SelectSingleNode("//main")
+                ?? doc.DocumentNode.SelectSingleNode("//body");
+
+            if (articleNode == null) return null;
+
+            var text = HtmlEntity.DeEntitize(articleNode.InnerText);
+            // Normalize whitespace
+            text = System.Text.RegularExpressions.Regex.Replace(text, @"\s+", " ").Trim();
+
+            // Cap at 5000 chars to keep storage reasonable
+            if (text.Length > 5000)
+                text = text.Substring(0, 5000);
+
+            return string.IsNullOrWhiteSpace(text) ? null : text;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Failed to fetch article content from {Url}", url);
+            return null;
         }
     }
 

@@ -25,7 +25,7 @@ else
                 {
                     <tr>
                         <td>
-                            <a href="@article.Url" target="_blank" rel="noopener">@article.Title</a>
+                            <a asp-action="Details" asp-route-id="@article.Id">@article.Title</a>
                             @if (!string.IsNullOrEmpty(article.Summary))
                             {
                                 <br /><small class="text-muted">@(article.Summary.Length > 200 ? article.Summary.Substring(0, 200) + "..." : article.Summary)</small>

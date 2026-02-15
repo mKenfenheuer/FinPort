@@ -137,7 +137,11 @@ public class AiMonitoringService : IHostedService, IDisposable
             sb.AppendLine("## Recent News");
             foreach (var article in articles)
             {
-                sb.AppendLine($"- [{article.Source}] {article.Title}: {article.Summary?.Substring(0, Math.Min(article.Summary?.Length ?? 0, 200))}");
+                sb.AppendLine($"- [{article.Source}] {article.Title}");
+                if (!string.IsNullOrWhiteSpace(article.Content))
+                    sb.AppendLine($"  Content: {article.Content.Substring(0, Math.Min(article.Content.Length, 500))}");
+                else if (!string.IsNullOrWhiteSpace(article.Summary))
+                    sb.AppendLine($"  Summary: {article.Summary.Substring(0, Math.Min(article.Summary.Length, 200))}");
             }
         }
 
